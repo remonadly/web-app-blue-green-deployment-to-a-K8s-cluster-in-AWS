@@ -1,0 +1,37 @@
+---
+
+- name: "create app directory"
+  file:
+    path: /home/ubuntu/remon
+    state: directory
+
+- name: "unarchive files"
+  unarchive:
+    src: /root/project/needed.tar.gz
+    dest: /home/ubuntu/remon
+
+- name: "deploy docker"
+  become: yes
+  shell: |
+    cd /home/ubuntu/remon
+    docker build --tag=capstone .
+    docker image ls
+    docker run -p 8000:80 capstone &
+    
+
+- name: "upload docker container"
+  become: yes
+  shell: |
+    dockerpath=remonadly/capstone
+    docker login -u remonadly -p amerb2022
+    docker tag capstone $dockerpath
+    docker push $dockerpath
+  
+- name: "deploy k8s"
+  shell: |
+    minikube start
+    dockerpath=remonadly/capstone
+    kubectl run capstone-pod --image=remonadly/capstone --port=80
+    sleep 3m 
+    kubectl get pods
+    kubectl port-forward capstone-pod 8080:80 &
